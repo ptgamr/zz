@@ -29,6 +29,7 @@ function init() {
   loader.load(
     "models/sukhoi_su-57_felon_-_fighter_jet_-_free.glb",
     function (gltf) {
+      gltf.scene.position.set(0, 0, -5);
       scene.add(gltf.scene);
     },
     undefined,
@@ -55,7 +56,20 @@ function init() {
   planeMesh = new THREE.Mesh(planeGeometry, planeMaterial);
   scene.add(planeMesh);
 
-  camera.position.z = 5;
+  // ================ LIGHTING ============================
+  // Create an AmbientLight and add it to the scene.
+  const ambientLight = new THREE.AmbientLight(0xcccccc);
+  scene.add(ambientLight);
+
+  // Create a DirectionalLight and add it to the scene.
+  const directionalLight = new THREE.DirectionalLight(0xffffff);
+  directionalLight.position.set(0, 1, 1).normalize();
+  scene.add(directionalLight);
+
+  camera.position.z = 30;
+  camera.position.y = 10;
+  camera.position.x = 10;
+  camera.updateProjectionMatrix();
   controls.update();
 }
 
