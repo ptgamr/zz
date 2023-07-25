@@ -9,6 +9,7 @@ let camera: THREE.PerspectiveCamera;
 let loader: GLTFLoader;
 let cube: THREE.Mesh;
 let controls: OrbitControls;
+let planeMesh: THREE.Mesh;
 
 function init() {
   renderer = new THREE.WebGLRenderer();
@@ -36,17 +37,26 @@ function init() {
     },
   );
 
-  const geometry = new THREE.BoxGeometry(1, 1, 1);
+  const boxGeometry = new THREE.BoxGeometry(1, 1, 1);
   // const material = new THREE.MeshBasicMaterial({ color: 0x00ff00 });
 
   // https://github.com/mrdoob/three.js/tree/master/examples/textures
   const texture = new THREE.TextureLoader().load("textures/crate.gif");
 
   const material = new THREE.MeshBasicMaterial({ map: texture });
-  cube = new THREE.Mesh(geometry, material);
+  cube = new THREE.Mesh(boxGeometry, material);
   scene.add(cube);
 
+  const planeGeometry = new THREE.PlaneGeometry(5, 5, 10, 10);
+  const planeMaterial = new THREE.MeshBasicMaterial({
+    color: 0xff0000,
+    side: THREE.DoubleSide,
+  });
+  planeMesh = new THREE.Mesh(planeGeometry, planeMaterial);
+  scene.add(planeMesh);
+
   camera.position.z = 5;
+  controls.update();
 }
 
 function onWindowResize() {
@@ -62,6 +72,8 @@ function animate() {
 
   cube.rotation.x += 0.01;
   cube.rotation.y += 0.01;
+
+  planeMesh.rotation.x += 0.01;
 
   renderer.render(scene, camera);
 }
