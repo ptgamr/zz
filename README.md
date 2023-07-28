@@ -1,8 +1,15 @@
+### How to run
+
+```
+npm install
+npm run dev
+```
+
 ### Tasks
 
-- [] Render ground using height maps + texture
-- [] Scroll to zoom in the scene
-- [] Displaying image + text
+- [x] Render ground using height maps + texture
+- [x] Scroll to zoom in the scene
+- [ ] Displaying image + text
 
 ### Tutorials:
 
