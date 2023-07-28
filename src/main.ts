@@ -1,15 +1,20 @@
 import "./style.css";
 import * as THREE from "three";
-import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
+import { GLTF, GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
+import { gsap } from "gsap";
 
 let renderer: THREE.WebGLRenderer;
 let scene: THREE.Scene;
 let camera: THREE.PerspectiveCamera;
 let loader: GLTFLoader;
-let cube: THREE.Mesh;
 let controls: OrbitControls;
-let planeMesh: THREE.Mesh;
+let groundMesh: THREE.Mesh;
+
+let jet: GLTF | null = null;
+
+const JET_SCALE = 1;
+const CAMERA_Z_ORIGIN = 200;
 
 function init() {
   renderer = new THREE.WebGLRenderer();
@@ -17,6 +22,19 @@ function init() {
   document.body.appendChild(renderer.domElement);
 
   scene = new THREE.Scene();
+  // Add an AxesHelper to the scene
+  const axesHelper = new THREE.AxesHelper(1000); // The parameter determines the size of the helper
+  scene.add(axesHelper);
+
+  createCamera();
+  // createJet();
+  createLight();
+  createGround();
+
+  controls.update();
+}
+
+function createCamera() {
   camera = new THREE.PerspectiveCamera(
     75,
     window.innerWidth / window.innerHeight,
@@ -24,38 +42,13 @@ function init() {
     1000,
   );
   controls = new OrbitControls(camera, renderer.domElement);
-  loader = new GLTFLoader();
+  camera.position.z = CAMERA_Z_ORIGIN;
+  camera.position.y = 100;
+  camera.position.x = 0;
+  camera.updateProjectionMatrix();
+}
 
-  loader.load(
-    "models/sukhoi_su-57_felon_-_fighter_jet_-_free.glb",
-    function (gltf) {
-      gltf.scene.position.set(0, 0, -5);
-      scene.add(gltf.scene);
-    },
-    undefined,
-    function (error) {
-      console.error(error);
-    },
-  );
-
-  const boxGeometry = new THREE.BoxGeometry(1, 1, 1);
-  // const material = new THREE.MeshBasicMaterial({ color: 0x00ff00 });
-
-  // https://github.com/mrdoob/three.js/tree/master/examples/textures
-  const texture = new THREE.TextureLoader().load("textures/crate.gif");
-
-  const material = new THREE.MeshBasicMaterial({ map: texture });
-  cube = new THREE.Mesh(boxGeometry, material);
-  scene.add(cube);
-
-  const planeGeometry = new THREE.PlaneGeometry(5, 5, 10, 10);
-  const planeMaterial = new THREE.MeshBasicMaterial({
-    color: 0xff0000,
-    side: THREE.DoubleSide,
-  });
-  planeMesh = new THREE.Mesh(planeGeometry, planeMaterial);
-  scene.add(planeMesh);
-
+function createLight() {
   // ================ LIGHTING ============================
   // Create an AmbientLight and add it to the scene.
   const ambientLight = new THREE.AmbientLight(0xcccccc);
@@ -65,12 +58,32 @@ function init() {
   const directionalLight = new THREE.DirectionalLight(0xffffff);
   directionalLight.position.set(0, 1, 1).normalize();
   scene.add(directionalLight);
+}
 
-  camera.position.z = 30;
-  camera.position.y = 10;
-  camera.position.x = 10;
-  camera.updateProjectionMatrix();
-  controls.update();
+function createGround() {
+  const groundGeo = new THREE.PlaneGeometry(1000, 1000, 200, 200);
+  const disMap = new THREE.TextureLoader().load("/textures/Heightmap.png");
+  const disScale = 100;
+
+  // const groundGeo = new THREE.PlaneGeometry(1000, 1000, 200, 200);
+  // const disMap = new THREE.TextureLoader().load(
+  //   "/textures/mt-taranaki.png",
+  // );
+  // const disScale = 200
+
+  disMap.wrapS = disMap.wrapT = THREE.RepeatWrapping;
+  disMap.repeat.set(1, 1);
+
+  const groundMat = new THREE.MeshStandardMaterial({
+    color: 0x32cd32,
+    wireframe: true,
+    displacementMap: disMap,
+    displacementScale: disScale,
+  });
+  groundMesh = new THREE.Mesh(groundGeo, groundMat);
+  scene.add(groundMesh);
+  groundMesh.rotation.x = -Math.PI / 2;
+  groundMesh.position.y = -0.5;
 }
 
 function onWindowResize() {
@@ -80,14 +93,65 @@ function onWindowResize() {
 }
 
 window.addEventListener("resize", onWindowResize, false);
+const scrollContainer = document.querySelector("#scroll-container");
+
+function onScroll() {
+  if (!scrollContainer) return;
+  const scrollPosition = scrollContainer.scrollTop;
+
+  // gsap.killTweensOf(camera.position);
+
+  gsap.to(camera.position, {
+    z: CAMERA_Z_ORIGIN - scrollPosition,
+    ease: "sine.in", // easeIn animation
+    duration: 1, // duration of the animation in seconds
+    overwrite: "auto", //This will prevent the new animation from stopping the ongoing one
+  });
+  renderer.render(scene, camera);
+}
+
+if (scrollContainer) {
+  scrollContainer.addEventListener("scroll", onScroll, false);
+}
+
+let jetDirection = 1;
+let jetSpeed = 0.3;
+
+function createJet() {
+  loader = new GLTFLoader();
+
+  loader.load(
+    "models/sukhoi_su-57_felon_-_fighter_jet_-_free_small.glb",
+    function (gltf) {
+      jet = gltf;
+      jet.scene.position.set(200, 100, -300);
+      jet.scene.scale.set(JET_SCALE, JET_SCALE, JET_SCALE);
+      scene.add(jet.scene);
+    },
+    undefined,
+    function (error) {
+      console.error(error);
+    },
+  );
+}
 
 function animate() {
   requestAnimationFrame(animate);
 
-  cube.rotation.x += 0.01;
-  cube.rotation.y += 0.01;
+  console.log(camera.position.z);
 
-  planeMesh.rotation.x += 0.01;
+  // camera.position.z += 0.1;
+  // camera.updateProjectionMatrix();
+
+  if (jet) {
+    let x = jet.scene.position.x;
+
+    // jetDirection = z > 10 ? -1 : z < 0 ? 1 : jetDirection;
+    jet.scene.position.x = x - jetSpeed * jetDirection;
+    console.log(jet.scene.position);
+  }
+
+  // groundMesh.rotation.x += 0.01;
 
   renderer.render(scene, camera);
 }
