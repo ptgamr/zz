@@ -36,7 +36,7 @@ function init() {
   scene.add(axesHelper);
 
   createCamera();
-  // createJet();
+  createJet();
   createLight();
   createGround();
   createText();
@@ -177,7 +177,7 @@ function createJet() {
     "models/sukhoi_su-57_felon_-_fighter_jet_-_free_small.glb",
     function (gltf) {
       jet = gltf;
-      jet.scene.position.set(200, 100, -300);
+      jet.scene.position.set(200, 100, CAMERA_Z_ORIGIN + 100);
       jet.scene.scale.set(JET_SCALE, JET_SCALE, JET_SCALE);
       scene.add(jet.scene);
     },
